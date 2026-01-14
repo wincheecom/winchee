@@ -1,0 +1,998 @@
+openapi: 3.0.0
+info:
+  title: 跨境发货管理系统 API
+  description: 多用户跨境发货管理系统，支持库存管理、发货任务跟踪、统计分析等功能
+  version: 1.0.0
+  contact:
+    name: 系统支持团队
+    email: support@shipping-system.com
+
+servers:
+  - url: https://cross-border-shipping-api.onrender.com/api
+    description: 生产环境
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 用户唯一标识符
+        email:
+          type: string
+          format: email
+          description: 用户邮箱
+        name:
+          type: string
+          description: 用户姓名
+        role:
+          type: string
+          enum: [admin, sales, warehouse]
+          description: 用户角色
+        company_name:
+          type: string
+          description: 公司名称
+        currency:
+          type: string
+          default: USD
+          description: 默认货币
+        language:
+          type: string
+          default: en
+          description: 默认语言
+        settings:
+          type: object
+          additionalProperties: true
+          description: 用户设置
+        is_active:
+          type: boolean
+          default: true
+          description: 用户是否激活
+        last_login:
+          type: string
+          format: date-time
+          description: 上次登录时间
+        created_at:
+          type: string
+          format: date-time
+          description: 创建时间
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新时间
+
+    Product:
+      type: object
+      required: [sku, name, price, cost]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 产品唯一标识符
+        sku:
+          type: string
+          maxLength: 100
+          description: 产品SKU
+        name:
+          type: string
+          maxLength: 255
+          description: 产品名称
+        description:
+          type: string
+          description: 产品描述
+        category:
+          type: string
+          maxLength: 100
+          description: 产品分类
+        price:
+          type: number
+          format: decimal
+          description: 销售价格
+        cost:
+          type: number
+          format: decimal
+          description: 成本价格
+        weight_kg:
+          type: number
+          format: decimal
+          description: 重量(kg)
+        dimensions:
+          type: string
+          description: 尺寸
+        image_url:
+          type: string
+          format: uri
+          description: 图片URL
+        created_by:
+          type: string
+          format: uuid
+          description: 创建者ID
+        created_at:
+          type: string
+          format: date-time
+          description: 创建时间
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新时间
+
+    Inventory:
+      type: object
+      required: [product_id, warehouse_code]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 库存唯一标识符
+        product_id:
+          type: string
+          format: uuid
+          description: 产品ID
+        warehouse_code:
+          type: string
+          maxLength: 50
+          description: 仓库代码
+        quantity:
+          type: integer
+          description: 总库存量
+        reserved_quantity:
+          type: integer
+          description: 已预订库存量
+        available_quantity:
+          type: integer
+          readOnly: true
+          description: 可用库存量
+        location:
+          type: string
+          description: 位置信息
+        last_stocked:
+          type: string
+          format: date-time
+          description: 最后补货时间
+        created_at:
+          type: string
+          format: date-time
+          description: 创建时间
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新时间
+
+    ShipmentTask:
+      type: object
+      required: [user_id, destination_country, customer_name]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 发货任务唯一标识符
+        task_number:
+          type: string
+          description: 任务编号
+        user_id:
+          type: string
+          format: uuid
+          description: 创建用户ID
+        status:
+          type: string
+          enum: [pending, processing, packed, shipped, delivered, cancelled]
+          default: pending
+          description: 任务状态
+        shipping_method:
+          type: string
+          description: 运输方式
+        tracking_number:
+          type: string
+          description: 跟踪号
+        destination_country:
+          type: string
+          description: 目的地国家
+        destination_address:
+          type: string
+          description: 目的地地址
+        customer_name:
+          type: string
+          description: 客户姓名
+        customer_email:
+          type: string
+          format: email
+          description: 客户邮箱
+        customer_phone:
+          type: string
+          description: 客户电话
+        total_weight_kg:
+          type: number
+          format: decimal
+          description: 总重量(kg)
+        shipping_cost:
+          type: number
+          format: decimal
+          description: 运费
+        insurance_cost:
+          type: number
+          format: decimal
+          description: 保险费用
+        total_amount:
+          type: number
+          format: decimal
+          description: 总金额
+        notes:
+          type: string
+          description: 备注
+        estimated_delivery:
+          type: string
+          format: date
+          description: 预计送达日期
+        actual_delivery:
+          type: string
+          format: date
+          description: 实际送达日期
+        created_at:
+          type: string
+          format: date-time
+          description: 创建时间
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新时间
+
+    ShipmentItem:
+      type: object
+      required: [shipment_id, product_id, inventory_id, quantity, unit_price]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 发货项唯一标识符
+        shipment_id:
+          type: string
+          format: uuid
+          description: 发货任务ID
+        product_id:
+          type: string
+          format: uuid
+          description: 产品ID
+        inventory_id:
+          type: string
+          format: uuid
+          description: 库存ID
+        quantity:
+          type: integer
+          minimum: 1
+          description: 数量
+        unit_price:
+          type: number
+          format: decimal
+          description: 单价
+        total_price:
+          type: number
+          format: decimal
+          readOnly: true
+          description: 总价
+        created_at:
+          type: string
+          format: date-time
+          description: 创建时间
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: 用户邮箱
+        password:
+          type: string
+          description: 用户密码
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT认证令牌
+        user:
+          $ref: '#/components/schemas/User'
+
+    RegisterRequest:
+      type: object
+      required: [email, password, name, role]
+      properties:
+        email:
+          type: string
+          format: email
+          description: 用户邮箱
+        password:
+          type: string
+          minLength: 8
+          description: 用户密码
+        name:
+          type: string
+          description: 用户姓名
+        role:
+          type: string
+          enum: [sales, warehouse]
+          description: 用户角色
+        company_name:
+          type: string
+          description: 公司名称
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: 错误信息
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              msg:
+                type: string
+                description: 错误详情
+
+paths:
+  /auth/register:
+    post:
+      summary: 用户注册
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 邮箱已被注册
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      summary: 用户登录
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: 邮箱或密码错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 账户被禁用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/me:
+    get:
+      summary: 获取当前用户信息
+      tags: [Authentication]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /products:
+    get:
+      summary: 获取产品列表
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+                  total:
+                    type: integer
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: 创建新产品
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /products/{id}:
+    get:
+      summary: 获取产品详情
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 产品不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: 更新产品信息
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 产品不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: 删除产品
+      tags: [Products]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 删除成功
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 产品不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /inventory:
+    get:
+      summary: 获取库存列表
+      tags: [Inventory]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: minAvailable
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  inventory:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Inventory'
+                  total:
+                    type: integer
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: 创建库存记录
+      tags: [Inventory]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Inventory'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inventory'
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /inventory/{productId}/{warehouseCode}/lock:
+    post:
+      summary: 锁定库存（用于发货任务）
+      tags: [Inventory]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: warehouseCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: quantity
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: shipmentId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 锁定成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  locked:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "库存锁定成功"
+        '400':
+          description: 库存不足或请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /shipments:
+    get:
+      summary: 获取发货任务列表
+      tags: [Shipments]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, packed, shipped, delivered, cancelled]
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            default: created_at
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shipments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ShipmentTask'
+                  total:
+                    type: integer
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: 创建发货任务
+      tags: [Shipments]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShipmentTask'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentTask'
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /shipments/{id}:
+    get:
+      summary: 获取发货任务详情
+      tags: [Shipments]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentTask'
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 发货任务不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: 更新发货任务
+      tags: [Shipments]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShipmentTask'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentTask'
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 发货任务不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: 取消发货任务
+      tags: [Shipments]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 取消成功
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 发货任务不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /analytics/summary:
+    get:
+      summary: 获取统计摘要
+      tags: [Analytics]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  today_shipments:
+                    type: integer
+                    description: 今日发货量
+                  yesterday_shipments:
+                    type: integer
+                    description: 昨日发货量
+                  today_revenue:
+                    type: number
+                    format: decimal
+                    description: 今日收入
+                  yesterday_revenue:
+                    type: number
+                    format: decimal
+                    description: 昨日收入
+                  today_profit:
+                    type: number
+                    format: decimal
+                    description: 今日利润
+                  yesterday_profit:
+                    type: number
+                    format: decimal
+                    description: 昨日利润
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /files/upload:
+    post:
+      summary: 上传文件到R2
+      tags: [Files]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                fileType:
+                  type: string
+                  enum: [invoice, shipping_label, product_image, other]
+                relatedId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fileId:
+                    type: string
+                    format: uuid
+                  fileName:
+                    type: string
+                  fileUrl:
+                    type: string
+                    format: uri
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: 文件太大
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
