@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>跨境发货管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 登录页面 -->
+        <div id="loginPage" class="page">
+            <div class="login-container">
+                <div class="login-header">
+                    <h1>跨境发货管理系统</h1>
+                    <p>请登录您的账户</p>
+                </div>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">邮箱</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">密码</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">登录</button>
+                    <div id="loginError" class="error-message" style="display: none;"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 主界面 -->
+        <div id="mainPage" class="page" style="display: none;">
+            <!-- 侧边栏 -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h2><i class="fas fa-ship"></i> 发货系统</h2>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="#" class="nav-link active" data-page="dashboard"><i class="fas fa-tachometer-alt"></i> 仪表盘</a></li>
+                    <li><a href="#" class="nav-link" data-page="products"><i class="fas fa-boxes"></i> 产品管理</a></li>
+                    <li><a href="#" class="nav-link" data-page="shipments"><i class="fas fa-truck"></i> 发货任务</a></li>
+                    <li><a href="#" class="nav-link" data-page="analytics"><i class="fas fa-chart-bar"></i> 统计分析</a></li>
+                    <li><a href="#" class="nav-link" data-page="profile"><i class="fas fa-user"></i> 个人资料</a></li>
+                </ul>
+                <div class="sidebar-footer">
+                    <button id="logoutBtn" class="btn btn-secondary">退出登录</button>
+                </div>
+            </aside>
+
+            <!-- 主内容区 -->
+            <main class="main-content">
+                <!-- 仪表盘 -->
+                <div id="dashboard" class="content-section">
+                    <div class="header">
+                        <h1>仪表盘</h1>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-blue">
+                                <i class="fas fa-boxes"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="totalProducts">0</h3>
+                                <p>总产品数</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-green">
+                                <i class="fas fa-truck"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="totalShipments">0</h3>
+                                <p>总发货量</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-orange">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="totalRevenue">¥0</h3>
+                                <p>总收入</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-purple">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="totalProfit">¥0</h3>
+                                <p>总利润</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="card">
+                                <h3>最近发货任务</h3>
+                                <div id="recentShipmentsList" class="list">
+                                    <!-- 最近发货任务将在这里显示 -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card">
+                                <h3>库存预警</h3>
+                                <div id="inventoryAlertsList" class="list">
+                                    <!-- 库存预警将在这里显示 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 产品管理 -->
+                <div id="products" class="content-section" style="display: none;">
+                    <div class="header">
+                        <h1>产品管理</h1>
+                        <button id="addProductBtn" class="btn btn-primary">添加产品</button>
+                    </div>
+                    <div class="card">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>货号</th>
+                                        <th>名称</th>
+                                        <th>供应商</th>
+                                        <th>库存</th>
+                                        <th>进货价</th>
+                                        <th>销售价</th>
+                                        <th>利润率</th>
+                                        <th>图片</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productsTableBody">
+                                    <!-- 产品列表将在这里显示 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 发货任务 -->
+                <div id="shipments" class="content-section" style="display: none;">
+                    <div class="header">
+                        <h1>发货任务</h1>
+                        <button id="createShipmentBtn" class="btn btn-primary">创建任务</button>
+                    </div>
+                    <div class="card">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>任务编号</th>
+                                        <th>产品</th>
+                                        <th>数量</th>
+                                        <th>客户</th>
+                                        <th>目的地</th>
+                                        <th>状态</th>
+                                        <th>创建时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="shipmentsTableBody">
+                                    <!-- 发货任务列表将在这里显示 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 统计分析 -->
+                <div id="analytics" class="content-section" style="display: none;">
+                    <div class="header">
+                        <h1>统计分析</h1>
+                        <div class="filter-controls">
+                            <select id="timeFilter">
+                                <option value="today">今日</option>
+                                <option value="week">本周</option>
+                                <option value="month" selected>本月</option>
+                                <option value="year">本年</option>
+                                <option value="all">全部</option>
+                            </select>
+                            <select id="userFilter">
+                                <option value="">全部用户</option>
+                                <!-- 用户选项将动态加载 -->
+                            </select>
+                            <button id="exportCsvBtn" class="btn btn-secondary">导出CSV</button>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-blue">
+                                <i class="fas fa-truck-loading"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="analyticsShipments">0</h3>
+                                <p>发货量</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-green">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="analyticsRevenue">¥0</h3>
+                                <p>销售额</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-orange">
+                                <i class="fas fa-coins"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="analyticsProfit">¥0</h3>
+                                <p>利润</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-purple">
+                                <i class="fas fa-percentage"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="analyticsMargin">0%</h3>
+                                <p>平均利润率</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="card">
+                                <h3>销量排行</h3>
+                                <div id="salesRanking" class="list">
+                                    <!-- 销量排行将在这里显示 -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card">
+                                <h3>利润排行</h3>
+                                <div id="profitRanking" class="list">
+                                    <!-- 利润排行将在这里显示 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 个人资料 -->
+                <div id="profile" class="content-section" style="display: none;">
+                    <div class="header">
+                        <h1>个人资料</h1>
+                    </div>
+                    <div class="card">
+                        <form id="profileForm">
+                            <div class="form-row">
+                                <div class="form-group col-6">
+                                    <label for="profileName">姓名</label>
+                                    <input type="text" id="profileName" name="name" readonly>
+                                </div>
+                                <div class="form-group col-6">
+                                    <label for="profileEmail">邮箱</label>
+                                    <input type="email" id="profileEmail" name="email" readonly>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-6">
+                                    <label for="profileRole">角色</label>
+                                    <input type="text" id="profileRole" name="role" readonly>
+                                </div>
+                                <div class="form-group col-6">
+                                    <label for="profileCompany">公司</label>
+                                    <input type="text" id="profileCompany" name="company" readonly>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="profilePassword">新密码</label>
+                                <input type="password" id="profilePassword" name="password" placeholder="留空则不修改密码">
+                            </div>
+                            <button type="submit" class="btn btn-primary">更新资料</button>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 模态框 -->
+    <div id="modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">标题</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- 模态框内容将动态填充 -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
